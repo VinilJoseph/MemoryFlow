@@ -1,5 +1,5 @@
 import streamlit as st
-from langgraph_backend import chatbot
+from langgraph_tool_backend import chatbot
 from langchain_core.messages import HumanMessage, AIMessage
 import uuid
 
@@ -53,14 +53,12 @@ for thread_id in st.session_state['chat_threads'][::-1]:
         messages = load_conversation(thread_id)
 
         temp_messages = []
-
         for msg in messages:
             if isinstance(msg, HumanMessage):
-                role='user'
-            else:
-                role='assistant'
-            temp_messages.append({'role': role, 'content': msg.content})
-
+                temp_messages.append({'role': 'user', 'content': msg.content})
+            elif isinstance(msg, AIMessage) and msg.content:
+                temp_messages.append({'role': 'assistant', 'content': msg.content})
+            # ToolMessage is internal graph state, skip for UI
         st.session_state['message_history'] = temp_messages
 
 
@@ -80,7 +78,11 @@ if user_input:
     with st.chat_message('user'):
         st.text(user_input)
 
-    CONFIG = {'configurable': {'thread_id': st.session_state['thread_id']}}
+    CONFIG = {
+        'configurable': {'thread_id': st.session_state['thread_id']},
+        "run_name": "chat_threaded",
+        'recursion_limit': 10  # Hard stop after 10 steps to save tokens
+    }
 
 # first add the message to message_history
     with st.chat_message("assistant"):
@@ -90,8 +92,8 @@ if user_input:
                 config=CONFIG,
                 stream_mode="messages"
             ):
-                if isinstance(message_chunk, AIMessage):
-                    # yield only assistant tokens
+                if isinstance(message_chunk, AIMessage) and message_chunk.content:
+                    # yield only assistant text tokens
                     yield message_chunk.content
 
         ai_message = st.write_stream(ai_only_stream())

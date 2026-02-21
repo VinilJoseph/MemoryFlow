@@ -4,3 +4,13 @@ langchain-groq
 langgraph-checkpoint-sqlite
 python-dotenv
 streamlit
+langchain_mcp_adapters
+langchain
+langchain-community
+langchain-huggingface
+requests
+faiss-cpu
+pypdf
+duckduckgo-search
+langchain-text-splitters
+sentence-transformers
